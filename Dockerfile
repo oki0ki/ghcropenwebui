@@ -3,7 +3,7 @@
 # use build args in the docker build command with --build-arg="BUILDARG=true"
 ARG USE_CUDA=false
 ARG USE_OLLAMA=false
-ARG USE_SLIM=false
+ARG USE_SLIM=true
 ARG USE_PERMISSION_HARDENING=false
 # Tested with cu117 for CUDA 11 and cu121 for CUDA 12 (default)
 ARG USE_CUDA_VER=cu128
@@ -28,7 +28,7 @@ FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
 ARG BUILD_HASH
 
 # Set Node.js options (heap limit Allocation failed - JavaScript heap out of memory)
-# ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 WORKDIR /app
 
@@ -74,10 +74,10 @@ ENV ENV=prod \
 
 ## Basis URL Config ##
 ENV OLLAMA_BASE_URL="/ollama" \
-    OPENAI_API_BASE_URL=""
+    OPENAI_API_BASE_URL="https://generative-api-g7qi.encr.app/v1"
 
 ## API Key and Security Config ##
-ENV OPENAI_API_KEY="" \
+ENV OPENAI_API_KEY="connevt" \
     WEBUI_SECRET_KEY="" \
     SCARF_NO_ANALYTICS=true \
     DO_NOT_TRACK=true \
@@ -126,7 +126,7 @@ RUN chown -R $UID:$GID /app $HOME
 # Install common system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    git build-essential pandoc gcc netcat-openbsd curl jq \
+    git build-essential gcc netcat-openbsd curl jq \
     libmariadb-dev \
     python3-dev \
     ffmpeg libsm6 libxext6 zstd \

@@ -1,16 +1,21 @@
 <script lang="ts">
-        import { toast } from '$lib/notification';
+        import { toast } from 'svelte-sonner';
         import { onMount, tick } from 'svelte';
         import { settings, hfEnabled, searchEnabled, githubEnabled, kernelEnabled, kernelBrowserUrl, kernelSessionId, desktopEnabled, desktopLoading, desktopBrowserUrl, desktopSessionId } from '$lib/stores';
-        import { blobToFile, calculateSHA256, findWordIndices } from '$lib/utils';
-
-        import Prompts from './MessageInput/PromptCommands.svelte';
-        import Suggestions from './MessageInput/Suggestions.svelte';
+        import { blobToFile, calculateSHA256 } from '$lib/utils';
         import AddFilesPlaceholder from '../AddFilesPlaceholder.svelte';
         import { SUPPORTED_FILE_TYPE, SUPPORTED_FILE_EXTENSIONS } from '$lib/constants';
-        import Documents from './MessageInput/Documents.svelte';
-        import Models from './MessageInput/Models.svelte';
-        import BottomDrawer from '../common/BottomDrawer.svelte';
+        import Drawer from '../common/Drawer.svelte';
+
+        const findWordIndices = (text: string) => {
+                const words: { startIndex: number; endIndex: number; word: string }[] = [];
+                const regex = /\S+/g;
+                let match;
+                while ((match = regex.exec(text)) !== null) {
+                        words.push({ startIndex: match.index, endIndex: match.index + match[0].length - 1, word: match[0] });
+                }
+                return words;
+        };
 
         let drawerOpen = false;
         let dropdownOpen = false;
@@ -332,10 +337,7 @@
                                                 ) {
                                                         uploadDoc(file);
                                                 } else {
-                                                        toast.error(
-                                                                `Unknown File Type '{{file_type}}', but accepting and treating as plain text`,
-                                                                        { file_type: file['type'] }
-                                                        );
+                                                        toast.error(`Unknown File Type '${file['type']}', but accepting and treating as plain text`);
                                                         uploadDoc(file);
                                                 }
                                         });
@@ -411,37 +413,6 @@
                         </div>
 
                         <div class="w-full relative">
-                                {#if prompt.charAt(0) === '/'}
-                                        <Prompts bind:this={promptsElement} bind:prompt />
-                                {:else if prompt.charAt(0) === '#'}
-                                        <Documents
-                                                bind:this={documentsElement}
-                                                bind:prompt
-                                                on:url={(e) => {
-
-                                                        uploadWeb(e.detail);
-                                                }}
-                                                on:select={(e) => {
-
-                                                        files = [
-                                                                ...files,
-                                                                {
-                                                                        type: e?.detail?.type ?? 'doc',
-                                                                        ...e.detail,
-                                                                        upload_status: true
-                                                                }
-                                                        ];
-                                                }}
-                                        />
-                                {:else if prompt.charAt(0) === '@'}
-                                        <Models
-                                                bind:this={modelsElement}
-                                                bind:prompt
-                                                bind:user
-                                                bind:chatInputPlaceholder
-                                                {messages}
-                                        />
-                                {/if}
                         </div>
                 </div>
         </div>
@@ -479,10 +450,7 @@
                                                                         uploadDoc(file);
                                                                         filesInputElement.value = '';
                                                                 } else {
-                                                                        toast.error(
-                                                                                `Unknown File Type '{{file_type}}', but accepting and treating as plain text`,
-                                                                                        { file_type: file['type'] }
-                                                                        );
+                                                                        toast.error(`Unknown File Type '${file['type']}', but accepting and treating as plain text`);
                                                                         uploadDoc(file);
                                                                         filesInputElement.value = '';
                                                                 }
@@ -969,7 +937,7 @@
         </div>
 </div>
 
-<BottomDrawer bind:open={drawerOpen}>
+<Drawer bind:show={drawerOpen}>
         <div class="flex gap-3 mb-1">
                 <button
                         class="flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-2xl bg-gray-100 dark:bg-[#2a2a2a] hover:bg-gray-200 dark:hover:bg-[#333] transition text-gray-800 dark:text-gray-100"
@@ -1171,4 +1139,4 @@
                         {/if}
                 </div>
         </button>
-</BottomDrawer>
+</Drawer>
