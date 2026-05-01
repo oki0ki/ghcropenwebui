@@ -127,13 +127,11 @@ RUN chown -R $UID:$GID /app $HOME
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     git build-essential gcc netcat-openbsd curl jq \
-    libmariadb-dev \
-    python3-dev \
-    ffmpeg libsm6 libxext6 zstd \
+    python3-dev zstd \
     && rm -rf /var/lib/apt/lists/*
 
 # install python dependencies
-COPY --chown=$UID:$GID ./backend/requirements.txt ./requirements.txt
+COPY --chown=$UID:$GID ./backend/requirements-min.txt ./requirements.txt
 
 # Set UV_LINK_MODE to copy to prevent 0-byte file corruption in QEMU arm64 cross-builds
 ENV UV_LINK_MODE=copy
