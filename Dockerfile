@@ -23,24 +23,15 @@ ARG BUILD_HASH=dev-build
 ARG UID=0
 ARG GID=0
 
-######## WebUI frontend ########
-FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
-ARG BUILD_HASH
-
-# Set Node.js options (heap limit Allocation failed - JavaScript heap out of memory)
-ENV NODE_OPTIONS="--max-old-space-size=2048"
+######## WebUI frontend (pre-built, skips npm ci + vite) ########
+FROM --platform=$BUILDPLATFORM alpine:3.20 AS build
 
 WORKDIR /app
 
-# to store git revision in build
-RUN apk add --no-cache git
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY . .
-ENV APP_BUILD_HASH=${BUILD_HASH}
-RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
+# Use pre-built frontend artifacts committed to the repository
+COPY build ./build
+COPY CHANGELOG.md ./CHANGELOG.md
+COPY package.json ./package.json
 
 ######## WebUI backend ########
 FROM python:3.11.14-slim-bookworm AS base
@@ -101,9 +92,6 @@ ENV TIKTOKEN_ENCODING_NAME="cl100k_base" \
 ## Hugging Face download cache ##
 ENV HF_HOME="/app/backend/data/cache/embedding/models"
 
-## Torch Extensions ##
-# ENV TORCH_EXTENSIONS_DIR="/.cache/torch_extensions"
-
 #### Other models ##########################################################
 
 WORKDIR /app/backend
@@ -131,7 +119,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # install python dependencies
-COPY --chown=$UID:$GID ./backend/requirements-min.txt ./requirements.txt
+COPY --chown=$UID:$GID ./backend/requirements.txt ./requirements.txt
 
 # Set UV_LINK_MODE to copy to prevent 0-byte file corruption in QEMU arm64 cross-builds
 ENV UV_LINK_MODE=copy
@@ -149,10 +137,6 @@ RUN if [ "$USE_OLLAMA" = "true" ]; then \
     curl -fsSL https://ollama.com/install.sh | sh && \
     rm -rf /var/lib/apt/lists/*; \
     fi
-
-# copy embedding weight from build
-# RUN mkdir -p /root/.cache/chroma/onnx_models/all-MiniLM-L6-v2
-# COPY --from=build /app/onnx /root/.cache/chroma/onnx_models/all-MiniLM-L6-v2/onnx
 
 # copy built frontend files
 COPY --chown=$UID:$GID --from=build /app/build /app/build

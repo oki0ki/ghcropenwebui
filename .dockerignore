@@ -21,7 +21,6 @@ backend/data/*
 .git
 zipFile.zip
 uv.lock
-CHANGELOG.md
 cypress
 attached_assets
 demo.png

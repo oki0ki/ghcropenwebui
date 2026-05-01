@@ -20,7 +20,7 @@ const pypiPackages = ['black', 'pathspec', 'mypy_extensions', 'pytokens'];
 
 import { loadPyodide } from 'pyodide';
 import { setGlobalDispatcher, ProxyAgent } from 'undici';
-import { writeFile, readFile, copyFile, readdir, rmdir, access } from 'fs/promises';
+import { writeFile, readFile, copyFile, readdir, rmdir, mkdir, access } from 'fs/promises';
 
 /**
  * Loading network proxy configurations from the environment variables.
@@ -112,9 +112,15 @@ async function downloadPackages() {
 
 async function copyPyodide() {
         console.log('Copying Pyodide files into static directory');
+        // Ensure target directory exists before copying
+        await mkdir('static/pyodide', { recursive: true });
         // Copy all files from node_modules/pyodide to static/pyodide
         for await (const entry of await readdir('node_modules/pyodide')) {
-                await copyFile(`node_modules/pyodide/${entry}`, `static/pyodide/${entry}`);
+                try {
+                        await copyFile(`node_modules/pyodide/${entry}`, `static/pyodide/${entry}`);
+                } catch (err) {
+                        console.warn(`  Could not copy ${entry}:`, err.message);
+                }
         }
 }
 
@@ -189,7 +195,14 @@ async function downloadPyPIWheels() {
         console.log('Updated pyodide-lock.json with PyPI packages');
 }
 
-initNetworkProxyFromEnv();
-await downloadPackages();
-await copyPyodide();
-await downloadPyPIWheels();
+const offlineMode = process.env.PYODIDE_OFFLINE === '1' || process.env.PYODIDE_OFFLINE === 'true';
+
+if (offlineMode) {
+        console.log('PYODIDE_OFFLINE=1: skipping network downloads, copying from node_modules only');
+        await copyPyodide();
+} else {
+        initNetworkProxyFromEnv();
+        await downloadPackages();
+        await copyPyodide();
+        await downloadPyPIWheels();
+}

@@ -5,7 +5,6 @@ import ftfy
 import sys
 import json
 
-from azure.identity import DefaultAzureCredential
 from langchain_community.document_loaders import (
     AzureAIDocumentIntelligenceLoader,
     BSHTMLLoader,
@@ -371,7 +370,7 @@ class Loader:
                 loader = AzureAIDocumentIntelligenceLoader(
                     file_path=file_path,
                     api_endpoint=self.kwargs.get('DOCUMENT_INTELLIGENCE_ENDPOINT'),
-                    azure_credential=DefaultAzureCredential(),
+                    azure_credential=__import__('azure.identity', fromlist=['DefaultAzureCredential']).DefaultAzureCredential(),
                     api_model=self.kwargs.get('DOCUMENT_INTELLIGENCE_MODEL'),
                 )
         elif self.engine == 'mineru' and file_ext in ['pdf']:  # MinerU currently only supports PDF
