@@ -21,7 +21,10 @@ export default defineConfig({
                 APP_BUILD_HASH: JSON.stringify(process.env.APP_BUILD_HASH || 'dev-build')
         },
         build: {
-                sourcemap: false
+                sourcemap: false,
+                rollupOptions: {
+                        maxParallelFileOps: 3
+                }
         },
         worker: {
                 format: 'es'
