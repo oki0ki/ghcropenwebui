@@ -28,6 +28,10 @@ aiosqlite==0.21.0
 psycopg[binary]==3.2.9
 alembic==1.18.4
 
+# Database migrations (required)
+peewee==3.19.0
+peewee-migrate==1.14.3
+
 pycrdt==0.12.47
 redis==7.4.0
 
