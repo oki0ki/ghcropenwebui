@@ -23,15 +23,18 @@ ARG BUILD_HASH=dev-build
 ARG UID=0
 ARG GID=0
 
-######## WebUI frontend (pre-built, skips npm ci + vite) ########
-FROM --platform=$BUILDPLATFORM alpine:3.20 AS build
+######## WebUI frontend ########
+FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
 
 WORKDIR /app
 
-# Use pre-built frontend artifacts committed to the repository
-COPY build ./build
-COPY CHANGELOG.md ./CHANGELOG.md
-COPY package.json ./package.json
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+RUN echo "# Changelog" > CHANGELOG.md
 
 ######## WebUI backend ########
 FROM python:3.11.14-slim-bookworm AS base
@@ -148,7 +151,7 @@ COPY --chown=$UID:$GID ./backend .
 
 EXPOSE 8080
 
-HEALTHCHECK CMD curl --silent --fail http://localhost:${PORT:-8080}/health | jq -ne 'input.status == true' || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=300s --retries=3 CMD curl --silent --fail http://localhost:${PORT:-8080}/health | jq -ne 'input.status == true' || exit 1
 
 # Minimal, atomic permission hardening for OpenShift (arbitrary UID):
 # - Group 0 owns /app and /root
